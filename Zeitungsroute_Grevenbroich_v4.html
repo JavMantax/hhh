@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<title>Zeitungsroute Grevenbroich</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Arial,sans-serif;color:#111;background:#f2f2f7}
+*{box-sizing:border-box}body{margin:0;background:#f2f2f7}.app{max-width:760px;margin:auto;padding-bottom:110px}
+header{position:sticky;top:0;z-index:10;background:rgba(242,242,247,.96);backdrop-filter:blur(18px);padding:14px 16px 12px;border-bottom:1px solid #ddd}
+h1{font-size:25px;margin:0 0 3px}.sub{font-size:13px;color:#666}
+.bar{display:flex;gap:8px;margin-top:11px}.btn{border:0;border-radius:12px;padding:11px 13px;font-weight:700;background:#111;color:#fff}.btn.alt{background:#e5e5ea;color:#111}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:12px 16px}.stat{background:#fff;border-radius:15px;padding:12px;text-align:center}.num{font-size:21px;font-weight:800}.lbl{font-size:11px;color:#777;margin-top:2px}
+.routebox{margin:0 16px 12px;background:#111;color:#fff;border-radius:17px;padding:16px}.routebox .small{font-size:11px;opacity:.7}.routebox h2{font-size:19px;margin:4px 0 7px}.routebox p{font-size:13px;line-height:1.45;margin:0 0 12px;opacity:.88}.routebtn{background:#fff;color:#111;width:100%}
+.section{margin:14px 16px}.section h2{font-size:18px;margin:18px 0 8px}.card{background:#fff;border-radius:16px;overflow:hidden}
+.item{padding:14px;border-bottom:1px solid #eee}.item:last-child{border-bottom:0}.row{display:flex;align-items:center;gap:11px}
+.check{width:25px;height:25px;appearance:none;border:2px solid #aaa;border-radius:50%;background:#fff;flex:none}.check:checked{background:#111;border-color:#111;position:relative}.check:checked:after{content:'✓';color:#fff;position:absolute;left:4px;top:-2px;font-size:18px}
+.street{flex:1;min-width:0}.name{font-weight:750}.range{font-size:12px;color:#666;margin-top:2px}.note{font-size:11px;color:#925d00;margin-top:5px}.reasonroute{font-size:11px;color:#666;margin-top:5px;line-height:1.35}
+.nav{border:0;background:#eee;border-radius:10px;padding:9px 10px;font-weight:700}
+.skiplist{margin:10px 0 0 36px;padding:0;list-style:none}.skip{display:flex;align-items:center;justify-content:space-between;background:#f5f5f7;border-radius:10px;padding:8px 9px;margin-top:6px;font-size:12px}.skip span{min-width:0}.skip b{display:block}.skip small{color:#777}.del{border:0;background:transparent;font-size:16px;padding:3px 4px}
+.add{margin:9px 0 0 36px;border:0;background:#e5e5ea;border-radius:10px;padding:8px 10px;font-weight:650;font-size:12px}
+.modal{display:none;position:fixed;inset:0;background:#0007;z-index:50;align-items:flex-end;justify-content:center}.modal.show{display:flex}.sheet{background:#fff;width:100%;max-width:760px;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}.sheet h3{margin:0 0 12px}.field{width:100%;padding:12px;border:1px solid #ccc;border-radius:11px;margin:6px 0 10px;font-size:16px}.sheet .actions{display:flex;gap:8px}.sheet .actions button{flex:1}
+.hint{font-size:12px;color:#666;line-height:1.45;padding:0 16px}.footer{position:fixed;bottom:0;left:0;right:0;background:rgba(242,242,247,.96);backdrop-filter:blur(16px);border-top:1px solid #ddd;padding:9px 16px calc(9px + env(safe-area-inset-bottom));z-index:20}.footer button{width:100%}.done .name,.done .range{opacity:.5;text-decoration:line-through}
+.route-step{display:flex;gap:10px;align-items:flex-start;background:#fff;border-radius:12px;padding:10px 12px;margin:7px 0;font-size:12px}.route-step b{min-width:25px}.route-step span{line-height:1.35}.route-step em{display:block;color:#777;font-style:normal;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <h1>Zeitungsroute</h1>
+  <div class="sub">Grevenbroich · Zustellroute ohne GPS</div>
+  <div class="bar">
+    <button class="btn" onclick="navigateNext()">↗ Nächster Stopp</button>
+    <button class="btn alt" onclick="resetChecks()">Reset</button>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="num" id="done">0</div><div class="lbl">erledigt</div></div>
+  <div class="stat"><div class="num" id="left">15</div><div class="lbl">offen</div></div>
+  <div class="stat"><div class="num" id="pct">0%</div><div class="lbl">Fortschritt</div></div>
+</div>
+
+<div class="routebox">
+  <div class="small">OPTIMIERTE KOMPLETTROUTE</div>
+  <h2 id="nextTitle">1. Hans-Sachs-Str.</h2>
+  <p>Die komplette Reihenfolge steht unten als nummerierte Liste. Die Straßen bleiben gleichzeitig einzeln abhackbar und haben jeweils „Haus nicht beliefern“. Die Reihenfolge bündelt die Seitenstraßen direkt am passenden Richard-Wagner-/Ostbereich, damit möglichst wenig zurückgelaufen wird.</p>
+  <button class="btn routebtn" onclick="navigateNext()">Zum nächsten Stopp in Apple Maps</button>
+</div>
+
+<div class="section">
+  <h2>Warum diese Reihenfolge?</h2>
+  <div id="routePlan"></div>
+</div>
+
+<div id="list"></div>
+
+<div class="hint" style="margin-top:12px;background:#fff;border-radius:14px;padding:12px 16px;">
+  <b>Wichtig:</b> Die App nutzt kein GPS. Apple Maps wird nur geöffnet, wenn du einen Stopp antippst. Die Zustell-Häkchen und „Nicht beliefern“-Einträge werden lokal auf diesem iPhone gespeichert.
+</div>
+<div class="hint" style="margin-top:8px;">
+  <b>Nicht beliefern:</b> Bei jeder Straße kannst du Hausnummer, Name und optional einen Grund eintragen. Die Einträge bleiben auf dem Gerät und stehen bei der jeweiligen Straße.
+</div>
+</div>
+
+<div class="footer"><button class="btn" onclick="showAddForNext()">+ Haus bei nächstem Stopp hinzufügen</button></div>
+
+<div class="modal" id="modal">
+  <div class="sheet">
+    <h3 id="modalTitle">Haus nicht beliefern</h3>
+    <input id="house" class="field" placeholder="Hausnummer / Adresse, z. B. 52">
+    <input id="person" class="field" placeholder="Name, z. B. Müller">
+    <input id="reason" class="field" placeholder="Grund (optional)">
+    <div class="actions">
+      <button class="btn alt" onclick="closeModal()">Abbrechen</button>
+      <button class="btn" onclick="saveSkip()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const streets=[
+ {district:'02205',name:'Hans-Sachs-Str.',range:'1–35 / 2–26',q:'Hans-Sachs-Straße, Grevenbroich'},
+ {district:'02205',name:'Merkatorstr.',range:'1–9 / 2–10',q:'Merkatorstraße, Grevenbroich'},
+ {district:'02205',name:'Richard-Wagner-Str.',range:'1–23 / 2–30',q:'Richard-Wagner-Straße 23, Grevenbroich'},
+ {district:'02206',name:'Merkatorstr.',range:'16–26 / 17–19',q:'Merkatorstraße 20, Grevenbroich'},
+ {district:'02206',name:'Schillerstr.',range:'21–89 / 42–118',note:'Haus-Nr. 85: Eingang für 1.+2. Etage an der Seite; 2 Zeitungen, 3 Parteien.',q:'Schillerstraße, Grevenbroich'},
+ {district:'02206',name:'Henzenstr.',range:'1–999 / 2–998',q:'Henzenstraße, Grevenbroich'},
+ {district:'02206',name:'Theodor-Fontane-Str.',range:'1–5 / 2–6',q:'Theodor-Fontane-Straße, Grevenbroich'},
+ {district:'02206',name:'Richard-Wagner-Str.',range:'32–80 / 45–77',q:'Richard-Wagner-Straße 73, Grevenbroich'},
+ {district:'02210',name:'Richard-Wagner-Str.',range:'81–999 / 82–998',q:'Richard-Wagner-Straße 109, Grevenbroich'},
+ {district:'02210',name:'Giersbergstr.',range:'1–999 / 2–998',q:'Giersbergstraße, Grevenbroich'},
+ {district:'02210',name:'Fürstenwalder Str.',range:'1–999 / 2–998',q:'Fürstenwalder Straße, Grevenbroich'},
+ {district:'02210',name:'Tilsiter Str.',range:'1–999 / 2–998',q:'Tilsiter Straße, Grevenbroich'},
+ {district:'02210',name:'Rosenstr.',range:'1–999 / 2–998',q:'Rosenstraße, Grevenbroich'},
+ {district:'02210',name:'Blumenstr.',range:'1–999 / 2–998',note:'Haus-Nr. 25: Eingang liegt 100 m hinter dem Kiosk.',q:'Blumenstraße, Grevenbroich'},
+ {district:'02210',name:'Eintrachtstr.',range:'1–999 / 2–998',q:'Eintrachtstraße, Grevenbroich'},
+];
+const routeOrder=[0,1,2,3,4,5,6,7,8,13,12,11,10,9,14];
+const routeReasons={
+  0:'Start im westlichen Teil des Zustellgebiets.',
+  1:'Direkter Übergang von Hans-Sachs-Straße; Merkatorstraße verbindet den westlichen Teil mit Schiller/Richard-Wagner.',
+  2:'Richard-Wagner-Straße beginnt direkt im Bereich Hans-Sachs; dieser erste Abschnitt wird komplett erledigt.',
+  3:'Zweiter Merkator-Abschnitt als Übergang in den Schiller-Bereich.',
+  4:'Schillerstraße liegt zwischen Merkatorstraße und Richard-Wagner-Straße und passt deshalb direkt in diesen Übergang.',
+  5:'Henzenstraße liegt nahe Schillerstraße sowie dem weiteren inneren Bereich.',
+  6:'Theodor-Fontane-Straße wird vor der Weiterführung auf Richard-Wagner erledigt und verhindert einen späteren Rückweg.',
+  7:'Weiterführung der Richard-Wagner-Straße bis etwa Haus 80.',
+  8:'Östlicher Richard-Wagner-Abschnitt; anschließend werden die direkt angrenzenden Seitenstraßen abgearbeitet.',
+  13:'Blumenstraße wird direkt danach eingeschoben; sie ist mit Richard-Wagner verbunden.',
+  12:'Rosenstraße liegt im selben östlichen Straßencluster und wird vor dem Wechsel zu Tilsiter/Fürstenwalder erledigt.',
+  11:'Tilsiter Straße gehört zum gleichen kompakten östlichen Cluster.',
+  10:'Fürstenwalder Straße liegt sehr nah an Giersbergstraße und wird ohne großen Umweg angeschlossen.',
+  9:'Giersbergstraße liegt direkt im Bereich von Richard-Wagner und nahe Fürstenwalder.',
+  14:'Eintrachtstraße schließt den östlichen Cluster ab und liegt nahe mehreren der bereits bearbeiteten Seitenstraßen.'
+};
+
+let checked=JSON.parse(localStorage.getItem('zeitung_checked_v3')||'[]');
+let skips=JSON.parse(localStorage.getItem('zeitung_skips_v3')||'[]');
+let addStreet=null;
+
+function save(){localStorage.setItem('zeitung_checked_v3',JSON.stringify(checked));localStorage.setItem('zeitung_skips_v3',JSON.stringify(skips));}
+function render(){
+ const list=document.getElementById('list'); list.innerHTML='';
+ const sec=document.createElement('div');sec.className='section';
+ sec.innerHTML='<h2>Komplette Zustellroute</h2>';
+ const card=document.createElement('div');card.className='card';
+ routeOrder.forEach((i,n)=>{
+   const s=streets[i], done=checked.includes(i), own=skips.filter(x=>x.street===i);
+   const item=document.createElement('div');item.className='item '+(done?'done':'');
+   item.innerHTML=`
+     <div class="row">
+       <input class="check" type="checkbox" ${done?'checked':''} onchange="toggle(${i},this.checked)">
+       <div class="street"><div class="name">${n+1}. ${s.name}</div><div class="range">Bezirk ${s.district} · ${s.range}</div>${s.note?`<div class="note">Hinweis: ${s.note}</div>`:''}<div class="reasonroute">${routeReasons[i]}</div></div>
+       <button class="nav" aria-label="In Apple Maps öffnen" onclick="openNav('${encodeURIComponent(s.q)}')">↗</button>
+     </div>
+     <ul class="skiplist">${own.map(x=>`<li class="skip"><span><b>${esc(x.house)}${x.person?' – '+esc(x.person):''}</b>${x.reason?`<small>${esc(x.reason)}</small>`:''}</span><button class="del" aria-label="Eintrag löschen" onclick="removeSkip(${x.id})">×</button></li>`).join('')}</ul>
+     <button class="add" onclick="openAdd(${i})">+ Haus nicht beliefern</button>`;
+   card.appendChild(item);
+ });
+ sec.appendChild(card);list.appendChild(sec);
+ updateStats();updateNext();renderPlan();
+}
+function renderPlan(){
+ const box=document.getElementById('routePlan');
+ box.innerHTML=routeOrder.map((i,n)=>`<div class="route-step"><b>${n+1}</b><span><strong>${streets[i].name}</strong><em>Bezirk ${streets[i].district} · ${streets[i].range}</em></span></div>`).join('');
+}
+function esc(v){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+function toggle(i,v){if(v&&!checked.includes(i))checked.push(i);if(!v)checked=checked.filter(x=>x!==i);save();render();}
+function resetChecks(){if(confirm('Nur die Häkchen zurücksetzen? „Nicht beliefern“-Häuser bleiben erhalten.')){checked=[];save();render();}}
+function updateStats(){const d=checked.length;document.getElementById('done').textContent=d;document.getElementById('left').textContent=routeOrder.length-d;document.getElementById('pct').textContent=Math.round(d/routeOrder.length*100)+'%';}
+function updateNext(){const n=routeOrder.findIndex(i=>!checked.includes(i));if(n<0){document.getElementById('nextTitle').textContent='Alle Straßen erledigt';return;}document.getElementById('nextTitle').textContent=(n+1)+'. '+streets[routeOrder[n]].name;}
+function openNav(q){window.open('https://maps.apple.com/?daddr='+q+'&dirflg=w','_blank');}
+function navigateNext(){const i=routeOrder.find(i=>!checked.includes(i));if(i===undefined){alert('Alle Straßen sind erledigt.');return}openNav(encodeURIComponent(streets[i].q));}
+function openAdd(i){addStreet=i;document.getElementById('modalTitle').textContent='Haus nicht beliefern · '+streets[i].name;document.getElementById('house').value='';document.getElementById('person').value='';document.getElementById('reason').value='';document.getElementById('modal').classList.add('show');setTimeout(()=>document.getElementById('house').focus(),100);}
+function showAddForNext(){const i=routeOrder.find(i=>!checked.includes(i));if(i===undefined){alert('Alle Straßen sind erledigt.');return}openAdd(i);}
+function closeModal(){document.getElementById('modal').classList.remove('show');addStreet=null;}
+function saveSkip(){const house=document.getElementById('house').value.trim(),person=document.getElementById('person').value.trim(),reason=document.getElementById('reason').value.trim();if(!house){alert('Bitte mindestens eine Hausnummer oder Adresse eingeben.');return}skips.push({id:Date.now(),street:addStreet,house,person,reason});save();closeModal();render();}
+function removeSkip(id){skips=skips.filter(x=>x.id!==id);save();render();}
+render();
+</script>
+</body>
+</html>
